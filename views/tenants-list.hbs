@@ -1,0 +1,79 @@
+<div class="p-8">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Clientes (Tenants)</h1>
+            <p class="text-gray-600">Gestión de inquilinos, API Keys y Webhooks globales.</p>
+        </div>
+        <a href="/admin/tenants/new" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center">
+            <i class="fas fa-plus mr-2"></i> Nuevo Cliente
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                    <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase">Nombre</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase">Tenant ID</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase">API Keys</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase">Webhook Global</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {{#each tenants}}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-bold text-gray-900">{{this.name}}</td>
+                    <td class="px-6 py-4 text-sm">
+                        <code>{{this.tenantId}}</code>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-mono">
+                            {{this.apiKeys.length}} Keys
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500 truncate max-w-xs">
+                        {{this.webhookUrl}}
+                    </td>
+                    <td class="px-6 py-4">
+                        <a href="/admin/tenants/{{this._id}}" class="text-indigo-600 hover:text-indigo-900 mr-4">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button data-id="{{this._id}}" class="btn-delete-tenant text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.btn-delete-tenant').forEach(btn => {
+    btn.addEventListener('click', function() {
+        deleteTenant(this.dataset.id);
+    });
+});
+
+async function deleteTenant(id) {
+    showConfirm(
+        'Eliminar Cliente',
+        '¿Estás seguro de eliminar este cliente? Se perderá el acceso via API Key y todas sus configuraciones.',
+        async () => {
+            try {
+                const res = await fetch(`/api/admin/tenants-crud/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Cliente eliminado correctamente');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast('Error al eliminar el cliente', 'error');
+                }
+            } catch (err) {
+                showToast('Error de red al conectar con el servidor', 'error');
+            }
+        }
+    );
+}
+</script>

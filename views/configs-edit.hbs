@@ -1,0 +1,462 @@
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+<div class="p-8 max-w-4xl mx-auto">
+    <div class="mb-8 flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-800">{{title}}</h1>
+        <a href="/admin/configs" class="text-gray-500 hover:text-gray-700 flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i> Volver a la lista
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <form id="configForm" class="space-y-6">
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+                    <select name="tenantId" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">Seleccione un cliente...</option>
+                        {{#each tenants}}
+                        <option value="{{this.tenantId}}" {{#if (eq this.tenantId ../config.tenantId)}}selected{{/if}}>
+                            {{this.name}} ({{this.tenantId}})
+                        </option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Slug del Documento</label>
+                    <input type="text" name="slug" value="{{config.slug}}" placeholder="ej: factura-gastos" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <h2 class="text-sm font-bold text-indigo-700 uppercase mb-4 flex items-center">
+                    <i class="fas fa-layer-group mr-2"></i> Pila de Procesamiento
+                </h2>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">Estrategia Principal</label>
+                        <select id="primaryStrategy" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition bg-white">
+                            {{#each strategies}}
+                            <option value="{{this.id}}" {{#if (eq ../config.primaryStrategy this.id)}}selected{{/if}}>{{this.name}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">Estrategia de Fallback (Opcional)</label>
+                        <select id="fallbackStrategy"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition bg-white">
+                            <option value="">Sin Fallback (Solo una pasada)</option>
+                            {{#each strategies}}
+                            <option value="{{this.id}}" {{#if (eq ../config.fallbackStrategy this.id)}}selected{{/if}}>{{this.name}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-4 italic">
+                    <i class="fas fa-info-circle mr-1"></i> Si la estrategia principal falla o no logra extraer los campos requeridos, se intentar&aacute; autom&aacute;ticamente con la de fallback.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Esquema de Extracci&oacute;n (JSON Schema)</label>
+                <textarea name="jsonSchema" rows="8" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    placeholder='{ "monto": "number", "vencimiento": "string" }'>{{config.jsonSchema}}</textarea>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-bold text-indigo-700 uppercase flex items-center">
+                        <i class="fas fa-check-double mr-2"></i> Reglas de Validaci&oacute;n
+                    </h2>
+                    <button type="button" id="btnAddRule" class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold hover:bg-indigo-200 transition">
+                        <i class="fas fa-plus mr-1"></i> Agregar Regla
+                    </button>
+                </div>
+
+                <div id="rulesContainer" class="space-y-4">
+                    <!-- Se llena vía JS -->
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Webhook URL (Opcional)</label>
+                <input type="url" name="webhookOverride" value="{{config.webhookOverride}}"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    placeholder="https://webhook.site/...">
+            </div>
+
+            <div class="pt-4 flex justify-end space-x-4">
+                <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg">
+                    <i class="fas fa-save mr-2"></i> Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Estrategias dinámicas desde el servidor
+const availableStrategies = {{{json strategies}}};
+const initialRules = {{{json config.validationRulesJson}}};
+
+const rulesContainer = document.getElementById('rulesContainer');
+const btnAddRule = document.getElementById('btnAddRule');
+const jsonSchemaTextarea = document.querySelector('textarea[name="jsonSchema"]');
+
+function getSchemaKeys() {
+    try {
+        const schema = JSON.parse(jsonSchemaTextarea.value);
+        const paths = [];
+        
+        function traverse(obj, prefix = '') {
+            // Caso 1: Nodos hoja (primitivos en el esquema como "string", "number", etc)
+            if (typeof obj !== 'object' || obj === null) {
+                if (prefix) paths.push(prefix);
+                return;
+            }
+            
+            // Caso 2: Arrays
+            if (Array.isArray(obj)) {
+                if (obj.length > 0 && typeof obj[0] === 'object') {
+                    // Array de objetos: tratamos los campos internos como rutas (ej: items.precio)
+                    traverse(obj[0], prefix);
+                } else {
+                    // Array de primitivos o vacío: lo tratamos como una hoja única
+                    if (prefix) paths.push(prefix);
+                }
+                return;
+            }
+            
+            // Caso 3: Objetos
+            const keys = Object.keys(obj);
+            if (keys.length === 0) {
+                if (prefix) paths.push(prefix);
+                return;
+            }
+            
+            keys.forEach(key => {
+                const path = prefix ? `${prefix}.${key}` : key;
+                traverse(obj[key], path);
+            });
+        }
+        
+        traverse(schema);
+        return [...new Set(paths)].sort();
+    } catch (e) {
+        return [];
+    }
+}
+
+function updateAllFieldSelectors() {
+    const keys = getSchemaKeys();
+    document.querySelectorAll('.ts-select').forEach(select => {
+        const currentVal = select.value;
+        const ts = select.tomselect;
+        
+        if (ts) {
+            ts.clearOptions();
+            ts.addOptions(keys.map(k => ({ value: k, text: k })));
+            ts.setValue(currentVal);
+        } else {
+            select.innerHTML = '<option value="">Seleccionar campo...</option>' + 
+                keys.map(k => `<option value="${k}" ${k === currentVal ? 'selected' : ''}>${k}</option>`).join('');
+        }
+    });
+}
+
+if (jsonSchemaTextarea) {
+    jsonSchemaTextarea.addEventListener('input', updateAllFieldSelectors);
+}
+
+if (btnAddRule) {
+    btnAddRule.addEventListener('click', () => {
+        addRuleRow();
+    });
+}
+
+function initTomSelect(el) {
+    if (!el) return;
+    if (el.tomselect) el.tomselect.destroy();
+    return new TomSelect(el, {
+        create: false,
+        sortField: { field: "text", direction: "asc" },
+        placeholder: "Buscar campo...",
+        maxOptions: 500,
+        render: {
+            no_results: (data, escape) => `<div class="no-results text-xs p-2 text-gray-400">No se encontr&oacute; "${escape(data.input)}"</div>`
+        }
+    });
+}
+
+function addRuleRow(data = {}) {
+    const rowId = 'rule_' + Date.now() + Math.random().toString(16).slice(2);
+    const div = document.createElement('div');
+    div.className = 'bg-gray-50/50 p-4 rounded-xl border border-gray-200 rule-row mb-4 transition-all hover:bg-white hover:shadow-md';
+    div.id = rowId;
+    
+    const ruleType = data.ruleType || 'not_null';
+    const keys = getSchemaKeys();
+    
+    div.innerHTML = `
+        <!-- Cabecera de la Regla: Nombre y Acción -->
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+            <div class="flex-1 pr-4">
+                <input type="text" 
+                    class="rule-message w-full bg-transparent border-none text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-0 p-0" 
+                    placeholder="ESCRIBE EL NOMBRE DE LA VALIDACIÓN AQUÍ..." 
+                    value="${data.message || ''}">
+            </div>
+            <button type="button" onclick="document.getElementById('${rowId}').remove()" 
+                class="text-gray-300 hover:text-red-500 transition-colors p-1">
+                <i class="fas fa-times-circle text-lg"></i>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-12 gap-4 items-start">
+            <!-- Selector de Campo -->
+            <div class="col-span-4">
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1.5 tracking-wider">Campo</label>
+                <select class="rule-field ts-select w-full">
+                    <option value="">Seleccionar...</option>
+                    ${keys.map(k => `<option value="${k}" ${k === data.field ? 'selected' : ''}>${k}</option>`).join('')}
+                </select>
+            </div>
+
+            <!-- Tipo de Regla -->
+            <div class="col-span-3">
+                <label class="block text-xs uppercase text-gray-400 font-bold mb-1.5 tracking-wider">Control</label>
+                <select class="rule-type w-full px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer font-medium" 
+                    onchange="toggleRuleFields('${rowId}')">
+                    <option value="not_null" ${ruleType === 'not_null' ? 'selected' : ''}>Obligatorio</option>
+                    <option value="is_date" ${ruleType === 'is_date' ? 'selected' : ''}>Fecha V&aacute;lida</option>
+                    <option value="is_number" ${ruleType === 'is_number' ? 'selected' : ''}>N&uacute;mero V&aacute;lido</option>
+                    <option value="compare_date" ${ruleType === 'compare_date' ? 'selected' : ''}>Comparar Fecha</option>
+                    <option value="compare_number" ${ruleType === 'compare_number' ? 'selected' : ''}>Comparar N&uacute;mero</option>
+                    <option value="formula" ${ruleType === 'formula' ? 'selected' : ''}>F&oacute;rmula (Math)</option>
+                    <option value="regex" ${ruleType === 'regex' ? 'selected' : ''}>RegEx</option>
+                </select>
+            </div>
+
+            <!-- Parámetros Dinámicos -->
+            <div class="col-span-5 bg-white/50 p-3 rounded-lg border border-dashed border-gray-200 rule-params-${rowId}">
+                <!-- Inyectado por toggleRuleFields -->
+            </div>
+        </div>
+    `;
+    
+    rulesContainer.appendChild(div);
+    initTomSelect(div.querySelector('.ts-select'));
+    toggleRuleFields(rowId, data);
+}
+
+function toggleRuleFields(rowId, data = {}) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const type = row.querySelector('.rule-type').value;
+    const container = row.querySelector(`[class*="rule-params-"]`);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    container.className = `col-span-5 bg-white/50 p-3 rounded-lg border border-dashed border-gray-200 rule-params-${rowId}`;
+
+    const keys = getSchemaKeys();
+
+    const getInitialCompValue = (d) => {
+        if (d.compareField) return '{' + '{' + d.compareField + '}' + '}';
+        return d.compareValue || '';
+    };
+
+    if (type === 'compare_date') {
+        container.innerHTML = `
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <select class="rule-op w-full px-2 py-2 text-xs border rounded-lg bg-gray-50 focus:bg-white shadow-inner font-medium">
+                        <option value="eq" ${data.operator === 'eq' ? 'selected' : ''}>igual a</option>
+                        <option value="gt" ${data.operator === 'gt' ? 'selected' : ''}>posterior a</option>
+                        <option value="lt" ${data.operator === 'lt' ? 'selected' : ''}>anterior a</option>
+                        <option value="gte" ${data.operator === 'gte' ? 'selected' : ''}>post. o igual</option>
+                        <option value="lte" ${data.operator === 'lte' ? 'selected' : ''}>ant. o igual</option>
+                    </select>
+                    <input type="text" class="rule-val w-full px-2 py-2 text-xs border rounded-lg shadow-inner bg-gray-50 focus:bg-white font-mono" 
+                        placeholder="'today' o YYYY/MM/DD" value="${getInitialCompValue(data)}">
+                </div>
+                <div class="relative group">
+                    <select class="rule-field-comp ts-select w-full" onchange="const inp = this.closest('.rule-row').querySelector('.rule-val'); if(this.value) inp.value = '{' + '{' + this.value + '}' + '}';">
+                        <option value="">O seleccionar campo del documento...</option>
+                        ${keys.map(k => `<option value="${k}">${k}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2 pt-2 border-t border-gray-100">
+                    <span class="text-xs text-gray-500 font-bold uppercase whitespace-nowrap">Margen:</span>
+                    <input type="number" class="rule-offset-val w-16 px-2 py-1 text-xs border rounded shadow-inner" placeholder="+/-" value="${data.offsetValue || ''}">
+                    <select class="rule-offset-unit flex-1 px-2 py-1 text-xs border rounded">
+                        <option value="days" ${data.offsetUnit === 'days' ? 'selected' : ''}>D&iacute;as</option>
+                        <option value="months" ${data.offsetUnit === 'months' ? 'selected' : ''}>Meses</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        initTomSelect(container.querySelector('.ts-select'));
+    } else if (type === 'compare_number') {
+        container.innerHTML = `
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <select class="rule-op w-full px-2 py-2 text-xs border rounded-lg bg-gray-50 shadow-inner font-medium">
+                        <option value="eq" ${data.operator === 'eq' ? 'selected' : ''}>igual a</option>
+                        <option value="gt" ${data.operator === 'gt' ? 'selected' : ''}>mayor que</option>
+                        <option value="lt" ${data.operator === 'lt' ? 'selected' : ''}>menor que</option>
+                        <option value="gte" ${data.operator === 'gte' ? 'selected' : ''}>mayor o igual</option>
+                    </select>
+                    <input type="text" class="rule-val w-full px-2 py-2 text-xs border rounded-lg shadow-inner bg-gray-50 focus:bg-white font-mono" 
+                        placeholder="Valor" value="${getInitialCompValue(data)}">
+                </div>
+                <div class="relative">
+                    <select class="rule-field-comp ts-select w-full" onchange="const inp = this.closest('.rule-row').querySelector('.rule-val'); if(this.value) inp.value = '{' + '{' + this.value + '}' + '}';">
+                        <option value="">O seleccionar campo del documento...</option>
+                        ${keys.map(k => `<option value="${k}">${k}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+        `;
+        initTomSelect(container.querySelector('.ts-select'));
+    } else if (type === 'formula') {
+        container.innerHTML = `
+            <div class="flex flex-col space-y-2">
+                <div class="flex items-center text-indigo-600 space-x-2">
+                    <i class="fas fa-calculator text-xs"></i>
+                    <span class="text-xs font-bold uppercase">Expresi&oacute;n Matemática</span>
+                </div>
+                <input type="text" class="rule-formula w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono bg-gray-50 focus:bg-white shadow-inner" 
+                    placeholder="base_imponible * 0.21" value="${data.formula || ''}">
+                <p class="text-xs text-gray-500 italic leading-tight">Ej: <code>total_linea == (precio * cantidad)</code></p>
+            </div>
+        `;
+    } else if (type === 'regex') {
+        container.innerHTML = `
+            <div class="space-y-3">
+                <select class="rule-predefined w-full px-2 py-2 text-xs border rounded-lg bg-white shadow-sm font-medium">
+                    <option value="custom" ${data.predefinedRegex === 'custom' ? 'selected' : ''}>Patr&oacute;n Personalizado</option>
+                    <option value="email" ${data.predefinedRegex === 'email' ? 'selected' : ''}>Email</option>
+                    <option value="phone" ${data.predefinedRegex === 'phone' ? 'selected' : ''}>Tel&eacute;fono</option>
+                    <option value="paraguay_ruc" ${data.predefinedRegex === 'paraguay_ruc' ? 'selected' : ''}>RUC Paraguay</option>
+                </select>
+                <textarea class="rule-regex w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono bg-gray-50 focus:bg-white shadow-inner" 
+                    rows="2" placeholder="^([0-9]+)$">${data.regex || ''}</textarea>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="h-full flex flex-col items-center justify-center text-gray-400 py-4">
+                <i class="fas fa-info-circle text-lg mb-2 opacity-30"></i>
+                <span class="text-xs font-bold tracking-widest uppercase">Validaci&oacute;n Simple</span>
+                <span class="text-xs mt-1 opacity-60">No requiere par&aacute;metros</span>
+            </div>
+        `;
+    }
+}
+
+// Cargar iniciales
+try {
+    const parsed = JSON.parse(initialRules);
+    Object.keys(parsed).forEach(field => {
+        parsed[field].forEach(rule => {
+            addRuleRow({ field, ...rule });
+        });
+    });
+} catch(e) {}
+
+document.getElementById('configForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // 1. Estrategias
+    const getMimeTypes = (strategyId) => availableStrategies.find(s => s.id === strategyId)?.mimeTypes || [];
+    const primary = document.getElementById('primaryStrategy').value;
+    const fallback = document.getElementById('fallbackStrategy').value;
+    data.strategyStack = [{ name: primary, mimeTypes: getMimeTypes(primary) }];
+    if (fallback && fallback !== primary) {
+        data.strategyStack.push({ name: fallback, mimeTypes: getMimeTypes(fallback) });
+    }
+
+    // 2. Schema
+    try { 
+        data.jsonSchema = JSON.parse(data.jsonSchema); 
+    } catch (err) { 
+        showToast('Esquema JSON inválido', 'error'); 
+        return; 
+    }
+
+    // 3. Collect Rules
+    const validationRules = {};
+    document.querySelectorAll('.rule-row').forEach(row => {
+        const field = row.querySelector('.rule-field').value;
+        const type = row.querySelector('.rule-type').value;
+        const message = row.querySelector('.rule-message').value;
+
+        if (!field) return;
+        if (!validationRules[field]) validationRules[field] = [];
+
+        const ruleObj = { ruleType: type, message };
+        
+        if (type === 'compare_date') {
+            ruleObj.operator = row.querySelector('.rule-op').value;
+            const val = row.querySelector('.rule-val').value;
+            if (val.startsWith('{{') && val.endsWith('}}')) {
+                ruleObj.compareField = val.slice(2, -2);
+                ruleObj.compareValue = undefined;
+            } else {
+                ruleObj.compareField = undefined;
+                ruleObj.compareValue = val || undefined;
+            }
+            ruleObj.offsetValue = row.querySelector('.rule-offset-val').value || undefined;
+            ruleObj.offsetUnit = row.querySelector('.rule-offset-unit').value || undefined;
+        } else if (type === 'compare_number') {
+            ruleObj.operator = row.querySelector('.rule-op').value;
+            const val = row.querySelector('.rule-val').value;
+            if (val.startsWith('{{') && val.endsWith('}}')) {
+                ruleObj.compareField = val.slice(2, -2);
+                ruleObj.compareValue = undefined;
+            } else {
+                ruleObj.compareField = undefined;
+                ruleObj.compareValue = val || undefined;
+            }
+        } else if (type === 'formula') {
+            ruleObj.formula = row.querySelector('.rule-formula').value;
+        } else if (type === 'regex') {
+            ruleObj.predefinedRegex = row.querySelector('.rule-predefined').value;
+            ruleObj.regex = row.querySelector('.rule-regex').value;
+        }
+        
+        validationRules[field].push(ruleObj);
+    });
+    data.validationRules = validationRules;
+
+    const isNew = {{isNew}};
+    const url = isNew ? '/api/admin/configs' : `/api/admin/configs/${'{{config._id}}'}`;
+    const method = isNew ? 'POST' : 'PATCH';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('Configuraci&oacute;n guardada con &eacute;xito');
+            setTimeout(() => window.location.href = '/admin/configs', 1000);
+        } else {
+            showToast('Error guardando configuraci&oacute;n', 'error');
+        }
+    } catch (err) { 
+        showToast('Error de red al conectar con el servidor', 'error'); 
+    }
+});
+</script>

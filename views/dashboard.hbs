@@ -1,0 +1,194 @@
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <!-- Total Documentos -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full min-h-[140px]">
+        <div class="flex items-center justify-between mb-auto">
+            <div class="bg-indigo-50 w-10 h-10 rounded-xl text-indigo-600 flex items-center justify-center">
+                <i class="fas fa-file-invoice text-lg"></i>
+            </div>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest text-right leading-tight">Total<br>Documentos</span>
+        </div>
+        <div class="mt-4">
+            <p class="text-3xl font-black text-gray-900 leading-none">{{stats.total}}</p>
+            <p class="text-xs text-gray-500 mt-2 font-medium italic">Histórico acumulado</p>
+        </div>
+    </div>
+
+    <!-- Completados -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full min-h-[140px]">
+        <div class="flex items-center justify-between mb-auto">
+            <div class="bg-green-50 w-10 h-10 rounded-xl text-green-600 flex items-center justify-center">
+                <i class="fas fa-check-double text-lg"></i>
+            </div>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest text-right leading-tight">Documentos<br>Completados</span>
+        </div>
+        <div class="mt-4">
+            <p class="text-3xl font-black text-gray-900 leading-none">{{stats.completed}}</p>
+            <div class="flex items-center mt-2">
+                <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Exitoso</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- En Proceso -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full min-h-[140px]">
+        <div class="flex items-center justify-between mb-auto">
+            <div class="bg-blue-50 w-10 h-10 rounded-xl text-blue-600 flex items-center justify-center">
+                <i class="fas fa-spinner fa-spin text-lg"></i>
+            </div>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest text-right leading-tight">Archivos<br>En Proceso</span>
+        </div>
+        <div class="mt-4">
+            <p class="text-3xl font-black text-gray-900 leading-none">{{stats.pending}}</p>
+            <p class="text-xs text-gray-500 mt-2 font-medium">Esperando extracción...</p>
+        </div>
+    </div>
+
+    <!-- Inconsistencias -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full min-h-[140px]">
+        <div class="flex items-center justify-between mb-auto">
+            <div class="bg-red-50 w-10 h-10 rounded-xl text-red-600 flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-lg"></i>
+            </div>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest text-right leading-tight">Alertas de<br>Inconsistencia</span>
+        </div>
+        <div class="mt-4">
+            <p class="text-3xl font-black text-gray-900 leading-none">{{stats.failed}}</p>
+            <p class="text-xs text-red-500 mt-2 font-bold uppercase tracking-tighter">Acción requerida</p>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xs font-bold text-gray-700 uppercase tracking-tight">Volumen de Documentos (30 días)</h3>
+            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded shadow-sm uppercase">Por Tipo</span>
+        </div>
+        <div class="h-64">
+            <canvas id="typeChart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xs font-bold text-gray-700 uppercase tracking-tight">Carga por Carpetas (30 días)</h3>
+            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded shadow-sm uppercase">Por ExternalID</span>
+        </div>
+        <div class="h-64">
+            <canvas id="folderChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+        <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Últimos Procesos</h2>
+        <a href="/admin/search" class="text-indigo-600 hover:text-indigo-800 font-bold uppercase" style="font-size: 10px;">Administrar todo</a>
+    </div>
+    <table class="w-full text-left">
+        <thead class="bg-gray-50/50">
+            <tr>
+                <th class="px-6 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest">External ID</th>
+                <th class="px-6 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest">Tipo</th>
+                <th class="px-6 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest">Estado</th>
+                <th class="px-6 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest">Fecha</th>
+                <th class="px-6 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 text-sm">
+            {{#each recentProcesses}}
+            <tr class="hover:bg-gray-50/50 transition duration-150">
+                <td class="px-6 py-4 font-bold text-gray-900">{{this.externalId}}</td>
+                <td class="px-6 py-4 text-gray-600">
+                    <span class="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">{{this.documentType}}</span>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-tight
+                        {{#if (eq this.status 'validated')}}bg-green-600 text-white
+                        {{else if (eq this.status 'completed')}}bg-green-100 text-green-700
+                        {{else if (eq this.status 'failed')}}bg-red-100 text-red-700
+                        {{else}}bg-blue-100 text-blue-700{{/if}}">
+                        {{this.status}}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-gray-500 font-medium text-xs">{{this.createdAt}}</td>
+                <td class="px-6 py-4 text-right">
+                    <a href="/admin/processes/{{this._id}}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm">
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </a>
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const rawData = {{{json chartData}}};
+    const labels = [...new Set(rawData.map(d => d._id.date))].sort();
+
+    // Lógica para el gráfico de Tipos
+    const types = [...new Set(rawData.map(d => d._id.type))];
+    const typeDatasets = types.map((type, idx) => {
+        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+        return {
+            label: type.toUpperCase(),
+            data: labels.map(date => {
+                const found = rawData.find(d => d._id.date === date && d._id.type === type);
+                return found ? found.count : 0;
+            }),
+            borderColor: colors[idx % colors.length],
+            backgroundColor: colors[idx % colors.length] + '20',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+        };
+    });
+
+    new Chart(document.getElementById('typeChart'), {
+        type: 'line',
+        data: { labels, datasets: typeDatasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, usePointStyle: true, font: { size: 10, weight: 'bold' } } } },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+
+    // Lógica para el gráfico de Carpetas (ExternalID únicos)
+    const folderData = labels.map(date => {
+        const docsOfDay = rawData.filter(d => d._id.date === date);
+        const uniqueIds = new Set();
+        docsOfDay.forEach(d => d.uniqueFolders.forEach(id => uniqueIds.add(id)));
+        return uniqueIds.size;
+    });
+
+    new Chart(document.getElementById('folderChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'CARPETAS ÚNICAS',
+                data: folderData,
+                backgroundColor: '#6366f1',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+</script>
+

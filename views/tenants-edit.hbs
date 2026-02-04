@@ -1,0 +1,323 @@
+<div class="p-8 max-w-5xl mx-auto">
+    <div class="mb-8 flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-800">{{title}}</h1>
+        <a href="/dashboard/tenants" class="text-gray-500 hover:text-gray-700 flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i> Volver
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <form id="tenantForm" class="space-y-8">
+            <!-- Sección: Información General -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold text-indigo-700 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i> Información del Cliente
+                </h2>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Comercial</label>
+                        <input type="text" name="name" value="{{tenant.name}}" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ID Único (Tenant ID)</label>
+                        <input type="text" name="tenantId" value="{{tenant.tenantId}}" {{#unless isNew}}readonly disabled{{/unless}} required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg {{#unless isNew}}bg-gray-50 shadow-inner{{/unless}} focus:ring-2 focus:ring-indigo-500 transition">
+                    </div>
+                </div>
+                <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-bold text-indigo-900">Webhook de Notificación Global (Fallback)</label>
+                        <div class="flex items-center">
+                            <span class="mr-2 text-xs font-bold text-gray-500 uppercase">Estado:</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="webhookEnabled" value="true" class="sr-only peer" {{#if tenant.webhookEnabled}}checked{{/if}} {{#if isNew}}checked{{/if}}>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                    <input type="url" name="webhookUrl" value="{{tenant.webhookUrl}}" placeholder="https://..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition bg-white">
+                    <p class="text-xs text-indigo-400 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i> 
+                        Se usará si la API Key no tiene un webhook específico o se activa globalmente.
+                    </p>
+                </div>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <!-- Sección: API Keys y Webhooks Específicos -->
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-indigo-700 flex items-center">
+                        <i class="fas fa-key mr-2"></i> API Keys y Webhooks por Canal
+                    </h2>
+                    <button type="button" id="btnAddKey" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-indigo-100 transition flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Añadir Nueva Key
+                    </button>
+                </div>
+
+                <div id="apiKeysContainer" class="grid grid-cols-1 gap-6">
+                    <!-- Las tarjetas de API Key se inyectan aquí -->
+                </div>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <!-- Sección: Ejemplo de Integración -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-code mr-2 text-indigo-500"></i> Ejemplo de Integración (cURL)
+                </h2>
+                <p class="text-sm text-gray-500">Usa este comando para procesar un documento vía API utilizando cualquiera de las llaves configuradas arriba.</p>
+                
+                <div class="bg-gray-900 rounded-xl p-6 relative group overflow-hidden">
+    <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+    <pre class="text-indigo-300 font-mono text-sm leading-relaxed overflow-x-auto"><code id="curlExample">curl -X POST <span class="base-url-placeholder"></span>/api/v1/ingesta \
+  -H "x-api-key: <span class="text-white">TU_API_KEY</span>" \
+  -F "file=@/ruta/al/documento.pdf" \
+  -F "type=<span class="text-white">SLUG_DEL_TIPO</span>" \
+  -F "externalId=INV-001" \
+  -F "tags=factura,2024" \
+  -F "sync=true"</code></pre>
+                    <button type="button" onclick="copyCurl()" class="absolute top-4 right-4 bg-gray-800 text-gray-400 hover:text-white p-2 rounded-lg transition opacity-0 group-hover:opacity-100">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <div class="mt-4 flex flex-wrap gap-4 border-t border-gray-800 pt-4">
+                        <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest"><i class="fas fa-link mr-1"></i> Protocolo: <span class="text-gray-400">Multipart/Form-Data</span></div>
+                        <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest"><i class="fas fa-shield-alt mr-1"></i> Auth: <span class="text-gray-400">Header x-api-key</span></div>
+                        <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest"><i class="fas fa-exchange-alt mr-1"></i> Sync: <span class="text-gray-400">Soporta true/false</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-8 border-t border-gray-100 flex justify-end">
+                <button type="submit" class="bg-indigo-600 text-white px-10 py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-2xl scale-100 hover:scale-105 active:scale-95 transform">
+                    <i class="fas fa-save mr-2"></i> Guardar Todos los Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Template para nueva API Key -->
+<template id="apiKeyTemplate">
+    <div class="api-key-card bg-gray-50 p-6 rounded-2xl border border-gray-200 relative shadow-sm hover:shadow-md transition">
+        <button type="button" class="btn-remove-key absolute top-4 right-4 text-red-400 hover:text-red-700 transition">
+            <i class="fas fa-times-circle fa-lg"></i>
+        </button>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Etiqueta del Canal</label>
+                <input type="text" class="key-label w-full px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="Ej: App Móvil, Integración SAP..." required>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">API Key</label>
+                <div class="flex items-center space-x-2">
+                    <input type="text" class="key-value w-full px-4 py-2 border rounded-lg bg-gray-100 font-mono text-xs focus:ring-2 focus:ring-indigo-400 outline-none" readonly>
+                    <button type="button" class="btn-copy-key p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-indigo-50 space-y-4">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                    <div class="h-2 w-2 rounded-full bg-indigo-500"></div>
+                    <p class="text-xs font-bold text-indigo-900 uppercase">Configuración de Webhook dedicada</p>
+                </div>
+                <div class="flex items-center">
+                    <span class="mr-2 text-[10px] font-bold text-gray-400 uppercase">Activo:</span>
+                    <label class="relative inline-flex items-center cursor-pointer scale-75">
+                        <input type="checkbox" class="key-webhook-enabled sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">URL del Endpoint</label>
+                <input type="url" class="key-webhook w-full px-4 py-2 border border-gray-100 rounded-lg text-sm bg-gray-50 focus:bg-white transition" placeholder="https://servidor-cliente.com/webhook">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Método de Autenticación</label>
+                    <select class="key-auth-type w-full px-3 py-2 border border-gray-100 rounded-lg text-sm bg-gray-50">
+                        <option value="none">Sin Autenticación</option>
+                        <option value="header">Custom Header</option>
+                        <option value="bearer">Bearer Token</option>
+                        <option value="basic">Basic Auth</option>
+                    </select>
+                </div>
+
+                <div class="auth-fields grid grid-cols-1 gap-2">
+                    <!-- Campos dinámicos de Auth -->
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+const initialData = {
+    apiKeys: {{{json tenant.apiKeys}}} || []
+};
+
+// Establecer URL base en el ejemplo de curl
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.base-url-placeholder').forEach(el => {
+        el.innerText = window.location.origin;
+    });
+});
+
+function copyCurl() {
+    const text = document.getElementById('curlExample').innerText;
+    navigator.clipboard.writeText(text);
+    showToast('Comando cURL copiado al portapapeles');
+}
+
+// Event Listeners
+document.getElementById('btnAddKey').addEventListener('click', () => addApiKeyCard());
+
+document.getElementById('apiKeysContainer').addEventListener('click', (e) => {
+    if (e.target.closest('.btn-remove-key')) {
+        e.target.closest('.api-key-card').remove();
+    }
+    if (e.target.closest('.btn-copy-key')) {
+        copyToClipboard(e.target.closest('.btn-copy-key'));
+    }
+});
+
+document.getElementById('apiKeysContainer').addEventListener('change', (e) => {
+    if (e.target.classList.contains('key-auth-type')) {
+        updateAuthFields(e.target);
+    }
+});
+
+// Cargar llaves existentes
+initialData.apiKeys.forEach(ak => {
+    addApiKeyCard(ak);
+});
+
+function addApiKeyCard(data = null) {
+    const container = document.getElementById('apiKeysContainer');
+    const template = document.getElementById('apiKeyTemplate');
+    const clone = template.content.cloneNode(true);
+    const card = clone.querySelector('.api-key-card');
+
+    const key = data ? data.key : 'key_' + Math.random().toString(36).substr(2, 9) + '-' + Math.random().toString(36).substr(2, 9);
+    card.querySelector('.key-value').value = key;
+    card.querySelector('.key-webhook-enabled').checked = true;
+
+    if (data) {
+        card.querySelector('.key-label').value = data.label || '';
+        card.querySelector('.key-webhook').value = data.webhookUrl || '';
+        card.querySelector('.key-webhook-enabled').checked = data.webhookEnabled !== false; // Default true
+        card.querySelector('.key-auth-type').value = data.webhookAuth?.type || 'none';
+        
+        // Cargar campos específicos de auth
+        const authType = data.webhookAuth?.type || 'none';
+        renderAuthInputs(card.querySelector('.auth-fields'), authType, data.webhookAuth);
+    } else {
+        renderAuthInputs(card.querySelector('.auth-fields'), 'none');
+    }
+
+    container.appendChild(clone);
+}
+
+function updateAuthFields(select) {
+    const container = select.closest('.grid').querySelector('.auth-fields');
+    renderAuthInputs(container, select.value);
+}
+
+function renderAuthInputs(container, type, values = {}) {
+    container.innerHTML = '';
+    const inputClass = "w-full px-3 py-2 border border-gray-100 rounded-lg text-xs bg-gray-50 focus:bg-white";
+
+    if (type === 'header') {
+        container.innerHTML = `
+            <input type="text" class="auth-header-name ${inputClass}" placeholder="Nombre del Header (X-Auth-Token)" value="${values.headerName || ''}">
+            <input type="text" class="auth-token ${inputClass}" placeholder="Valor del Token" value="${values.token || ''}">
+        `;
+    } else if (type === 'bearer') {
+        container.innerHTML = `
+            <input type="text" class="auth-token ${inputClass}" placeholder="JWT / Bearer Token" value="${values.token || ''}">
+        `;
+    } else if (type === 'basic') {
+        container.innerHTML = `
+            <input type="text" class="auth-username ${inputClass}" placeholder="Usuario" value="${values.username || ''}">
+            <input type="password" class="auth-password ${inputClass}" placeholder="Contraseña" value="${values.password || ''}">
+        `;
+    }
+}
+
+function copyToClipboard(btn) {
+    const input = btn.previousElementSibling;
+    input.select();
+    document.execCommand("copy");
+    const icon = btn.querySelector('i');
+    icon.className = 'fas fa-check text-green-500';
+    setTimeout(() => icon.className = 'fas fa-copy', 2000);
+}
+
+document.getElementById('tenantForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = {
+        name: formData.get('name'),
+        tenantId: formData.get('tenantId') || '{{tenant.tenantId}}',
+        webhookUrl: formData.get('webhookUrl'),
+        webhookEnabled: formData.get('webhookEnabled') === 'true',
+        apiKeys: []
+    };
+
+    // Recolectar datos de cada tarjeta
+    document.querySelectorAll('.api-key-card').forEach(card => {
+        const authType = card.querySelector('.key-auth-type').value;
+        const authFields = { type: authType };
+
+        if (authType === 'header') {
+            authFields.headerName = card.querySelector('.auth-header-name').value;
+            authFields.token = card.querySelector('.auth-token').value;
+        } else if (authType === 'bearer') {
+            authFields.token = card.querySelector('.auth-token').value;
+        } else if (authType === 'basic') {
+            authFields.username = card.querySelector('.auth-username').value;
+            authFields.password = card.querySelector('.auth-password').value;
+        }
+
+        payload.apiKeys.push({
+            label: card.querySelector('.key-label').value,
+            key: card.querySelector('.key-value').value,
+            webhookUrl: card.querySelector('.key-webhook').value,
+            webhookEnabled: card.querySelector('.key-webhook-enabled').checked,
+            webhookAuth: authFields
+        });
+    });
+
+    const isNew = {{isNew}};
+    const url = isNew ? '/api/admin/tenants' : `/api/admin/tenants-crud/${'{{tenant._id}}'}`;
+    const method = isNew ? 'POST' : 'PATCH';
+
+    const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        showToast('Cliente guardado correctamente');
+        setTimeout(() => {
+            window.location.href = '/admin/tenants';
+        }, 1000);
+    } else {
+        const err = await res.json();
+        showToast('Error al guardar: ' + (err.message || 'Error desconocido'), 'error');
+    }
+});
+</script>

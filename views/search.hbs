@@ -1,0 +1,179 @@
+<div class="space-y-6">
+    <!-- Filtros Superiores -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <form action="/admin/search" method="GET" id="searchForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="md:col-span-2 relative">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" name="q" value="{{filters.q}}" placeholder="Buscar por ID Externo o Tags..." 
+                    class="w-full pl-12 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm">
+            </div>
+            
+            <select name="status" class="px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                <option value="">Todos los estados</option>
+                <option value="pending" {{#if (eq filters.status 'pending')}}selected{{/if}}>Pendiente</option>
+                <option value="processing" {{#if (eq filters.status 'processing')}}selected{{/if}}>Procesando</option>
+                <option value="completed" {{#if (eq filters.status 'completed')}}selected{{/if}}>Completado</option>
+                <option value="validated" {{#if (eq filters.status 'validated')}}selected{{/if}}>Validado</option>
+                <option value="failed" {{#if (eq filters.status 'failed')}}selected{{/if}}>Fallido</option>
+            </select>
+
+            <select name="documentType" class="px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                <option value="">Todos los tipos</option>
+                {{#each configs}}
+                    <option value="{{this.slug}}" {{#if (eq ../filters.documentType this.slug)}}selected{{/if}}>{{this.slug}}</option>
+                {{/each}}
+            </select>
+
+            <!-- Hidden values for persistence -->
+            <input type="hidden" name="sortBy" value="{{filters.sortBy}}">
+            <input type="hidden" name="sortOrder" value="{{filters.sortOrder}}">
+            <input type="hidden" name="page" value="1" id="pageInput">
+
+            <div class="md:col-span-4 flex justify-end gap-2 mt-2">
+                <a href="/admin/search" class="px-6 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition">
+                    Limpiar
+                </a>
+                <button type="submit" class="bg-indigo-600 text-white px-8 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition shadow-sm">
+                    Aplicar Filtros
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Resultados -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+            <span class="text-sm text-gray-500 font-medium">Mostrando <span class="text-gray-900">{{processes.length}}</span> de <span class="text-gray-900">{{total}}</span> documentos</span>
+            
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-gray-400 font-bold uppercase">Items por página:</label>
+                <select onchange="document.getElementsByName('limit')[0].value = this.value; document.getElementById('searchForm').submit();" class="text-xs border-none bg-transparent font-bold text-gray-600 focus:ring-0">
+                    <option value="10" {{#if (eq limit 10)}}selected{{/if}}>10</option>
+                    <option value="25" {{#if (eq limit 25)}}selected{{/if}}>25</option>
+                    <option value="50" {{#if (eq limit 50)}}selected{{/if}}>50</option>
+                </select>
+                <input type="hidden" name="limit" value="{{limit}}">
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition" onclick="sortDocs('externalId')">
+                            External ID 
+                            {{#if (eq filters.sortBy 'externalId')}}
+                                <i class="fas fa-sort-{{#if (eq filters.sortOrder 'asc')}}up{{else}}down{{/if}} ml-1"></i>
+                            {{/if}}
+                        </th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition" onclick="sortDocs('documentType')">
+                            Tipo
+                            {{#if (eq filters.sortBy 'documentType')}}
+                                <i class="fas fa-sort-{{#if (eq filters.sortOrder 'asc')}}up{{else}}down{{/if}} ml-1"></i>
+                            {{/if}}
+                        </th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition" onclick="sortDocs('status')">
+                            Estado
+                            {{#if (eq filters.sortBy 'status')}}
+                                <i class="fas fa-sort-{{#if (eq filters.sortOrder 'asc')}}up{{else}}down{{/if}} ml-1"></i>
+                            {{/if}}
+                        </th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition" onclick="sortDocs('createdAt')">
+                            Fecha
+                            {{#if (eq filters.sortBy 'createdAt')}}
+                                <i class="fas fa-sort-{{#if (eq filters.sortOrder 'asc')}}up{{else}}down{{/if}} ml-1"></i>
+                            {{/if}}
+                        </th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {{#each processes}}
+                    <tr class="hover:bg-gray-50/80 transition group">
+                        <td class="px-6 py-4">
+                            <span class="text-sm font-bold text-gray-800">{{this.externalId}}</span>
+                            {{#if this.tags}}
+                                <div class="flex gap-1 mt-1">
+                                    {{#each this.tags}}
+                                        <span class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded uppercase font-bold">{{this}}</span>
+                                    {{/each}}
+                                </div>
+                            {{/if}}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-bold text-gray-500 uppercase">{{this.documentType}}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-tight
+                                {{#if (eq this.status 'validated')}}bg-green-600 text-white
+                                {{else if (eq this.status 'completed')}}bg-green-100 text-green-700
+                                {{else if (eq this.status 'failed')}}bg-red-100 text-red-700
+                                {{else}}bg-blue-100 text-blue-700{{/if}}">
+                                {{this.status}}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-xs text-gray-500 font-medium">
+                            {{this.createdAt}}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="/admin/processes/{{this._id}}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition shadow-sm">
+                                <i class="fas fa-arrow-right text-xs"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <div class="flex gap-2">
+                {{#if (gt page 1)}}
+                    <button onclick="changePage({{sub page 1}})" class="px-4 py-2 text-xs font-bold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition">
+                        <i class="fas fa-chevron-left mr-2"></i> Anterior
+                    </button>
+                {{else}}
+                    <button disabled class="px-4 py-2 text-xs font-bold text-gray-300 bg-white border border-gray-100 rounded-lg cursor-not-allowed">
+                        <i class="fas fa-chevron-left mr-2"></i> Anterior
+                    </button>
+                {{/if}}
+
+                {{#if (lt page pages)}}
+                    <button onclick="changePage({{add page 1}})" class="px-4 py-2 text-xs font-bold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition">
+                        Siguiente <i class="fas fa-chevron-right ml-2"></i>
+                    </button>
+                {{else}}
+                    <button disabled class="px-4 py-2 text-xs font-bold text-gray-300 bg-white border border-gray-100 rounded-lg cursor-not-allowed">
+                        Siguiente <i class="fas fa-chevron-right ml-2"></i>
+                    </button>
+                {{/if}}
+            </div>
+            
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Página <span class="text-indigo-600">{{page}}</span> de {{pages}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<script>
+function changePage(page) {
+    document.getElementById('pageInput').value = page;
+    document.getElementById('searchForm').submit();
+}
+
+function sortDocs(field) {
+    const currentSort = document.getElementsByName('sortBy')[0].value;
+    const currentOrder = document.getElementsByName('sortOrder')[0].value;
+    
+    let newOrder = 'desc';
+    if (currentSort === field && currentOrder === 'desc') {
+        newOrder = 'asc';
+    }
+    
+    document.getElementsByName('sortBy')[0].value = field;
+    document.getElementsByName('sortOrder')[0].value = newOrder;
+    document.getElementById('searchForm').submit();
+}
+</script>

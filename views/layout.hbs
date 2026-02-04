@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard OCR SaaS</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 font-sans transition-all duration-300">
+    <div class="min-h-screen max-h-screen flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-indigo-800 text-white flex flex-col transition-all duration-300 relative">
+            <!-- Toggle Button -->
+            <button onclick="toggleSidebar()" class="absolute -right-3 top-20 bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-lg border border-indigo-500 hover:bg-indigo-500 transition z-50">
+                <i id="toggleIcon" class="fas fa-chevron-left text-xs"></i>
+            </button>
+
+            <div class="p-6 text-xl font-bold flex items-center overflow-hidden whitespace-nowrap">
+                <i class="fas fa-microchip mr-3 min-w-[24px]"></i> 
+                <span class="sidebar-text">OCR SaaS</span>
+            </div>
+
+            <nav class="flex-1 mt-6 space-y-1 px-3">
+                <a href="/admin" class="flex items-center px-3 py-3 rounded-lg transition group {{#if (eq currentPath '/admin')}}bg-white/10 text-white{{else}}text-indigo-100 hover:bg-white/5{{/if}}">
+                    <i class="fas fa-chart-line min-w-[24px] text-center group-hover:scale-110 transition"></i>
+                    <span class="ml-3 sidebar-text font-medium">Dashboard</span>
+                </a>
+
+                <a href="/admin/folders" class="flex items-center px-3 py-3 rounded-lg transition group {{#if (eq currentPath '/admin/folders')}}bg-white/10 text-white{{else}}text-indigo-100 hover:bg-white/5{{/if}}">
+                    <i class="fas fa-folder min-w-[24px] text-center group-hover:scale-110 transition"></i>
+                    <span class="ml-3 sidebar-text font-medium">Carpetas</span>
+                </a>
+
+                <a href="/admin/search" class="flex items-center px-3 py-3 rounded-lg transition group {{#if (startsWith currentPath '/admin/search')}}bg-white/10 text-white{{else if (startsWith currentPath '/admin/processes')}}bg-white/10 text-white{{else}}text-indigo-100 hover:bg-white/5{{/if}}">
+                    <i class="fas fa-search min-w-[24px] text-center group-hover:scale-110 transition"></i>
+                    <span class="ml-3 sidebar-text font-medium">Búsqueda</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-3">
+                    <div class="border-t border-indigo-700/50"></div>
+                </div>
+
+                <a href="/admin/configs" class="flex items-center px-3 py-3 rounded-lg transition group {{#if (startsWith currentPath '/admin/configs')}}bg-white/10 text-white{{else}}text-indigo-100 hover:bg-white/5{{/if}}">
+                    <i class="fas fa-file-invoice min-w-[24px] text-center group-hover:scale-110 transition"></i>
+                    <span class="ml-3 sidebar-text font-medium">Configuraciones</span>
+                </a>
+
+                <a href="/admin/tenants" class="flex items-center px-3 py-3 rounded-lg transition group {{#if (startsWith currentPath '/admin/tenants')}}bg-white/10 text-white{{else}}text-indigo-100 hover:bg-white/5{{/if}}">
+                    <i class="fas fa-users-cog min-w-[24px] text-center group-hover:scale-110 transition"></i>
+                    <span class="ml-3 sidebar-text font-medium">Clientes</span>
+                </a>
+
+                {{#if (eq user.role 'admin')}}
+                <a href="/admin/users" class="flex items-center px-3 py-3 rounded-lg transition group {{#if (eq currentPath '/admin/users')}}bg-white/10 text-white{{else}}text-indigo-100 hover:bg-white/5{{/if}}">
+                    <i class="fas fa-user-shield min-w-[24px] text-center group-hover:scale-110 transition"></i>
+                    <span class="ml-3 sidebar-text font-medium">Usuarios</span>
+                </a>
+                {{/if}}
+            </nav>
+
+            <div class="p-4 bg-indigo-900/40">
+                <div class="flex items-center overflow-hidden">
+                    <img src="{{user.picture}}" class="w-8 h-8 rounded-full border-2 border-indigo-400/50 flex-shrink-0">
+                    <div class="ml-3 text-sm sidebar-text whitespace-nowrap">
+                        <p class="font-bold text-white">{{user.firstName}}</p>
+                        <a href="/auth/logout" class="text-indigo-300 hover:text-white text-xs uppercase font-bold tracking-wider">Salir</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto flex flex-col">
+            <header class="bg-white border-b border-gray-100 px-8 py-4 flex justify-between items-center sticky top-0 z-40">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-xl font-bold text-gray-800 tracking-tight">{{title}}</h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="/admin/ingesta" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-sm flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Procesar
+                    </a>
+                </div>
+            </header>
+
+            <div class="p-8 mx-auto w-full">
+                {{{body}}}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('toggleIcon');
+            const texts = document.querySelectorAll('.sidebar-text');
+            
+            if (sidebar.classList.contains('w-64')) {
+                sidebar.classList.replace('w-64', 'w-16');
+                icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+                texts.forEach(t => t.classList.add('hidden'));
+                localStorage.setItem('sidebar-collapsed', 'true');
+            } else {
+                sidebar.classList.replace('w-16', 'w-64');
+                icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+                texts.forEach(t => t.classList.remove('hidden'));
+                localStorage.setItem('sidebar-collapsed', 'false');
+            }
+        }
+
+        // Recuperar estado del sidebar al cargar
+        if (localStorage.getItem('sidebar-collapsed') === 'true') {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('toggleIcon');
+            const texts = document.querySelectorAll('.sidebar-text');
+            sidebar.classList.replace('w-64', 'w-16');
+            icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+            texts.forEach(t => t.classList.add('hidden'));
+        }
+
+        /**
+         * Sistema Global de Notificaciones (Toasts)
+         */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800 transition-opacity duration-300 opacity-0`;
+            
+            const iconColors = {
+                success: 'text-green-500 bg-green-100 dark:bg-green-800 dark:text-green-200',
+                error: 'text-red-500 bg-red-100 dark:bg-red-800 dark:text-red-200',
+                warning: 'text-orange-500 bg-orange-100 dark:bg-orange-800 dark:text-orange-200'
+            };
+
+            const icons = {
+                success: '<i class="fas fa-check"></i>',
+                error: '<i class="fas fa-times"></i>',
+                warning: '<i class="fas fa-exclamation"></i>'
+            };
+
+            toast.innerHTML = `
+                <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 ${iconColors[type] || iconColors.success} rounded-lg">
+                    ${icons[type] || icons.success}
+                </div>
+                <div class="ms-3 text-sm font-normal">${message}</div>
+                <button type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" aria-label="Close">
+                    <span class="sr-only">Cerrar</span>
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+            
+            // Fade in
+            setTimeout(() => toast.classList.remove('opacity-0'), 10);
+
+            const close = () => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            toast.querySelector('button').onclick = close;
+            setTimeout(close, 5000);
+        }
+
+        /**
+         * Sistema Global de Confirmación (Modal)
+         */
+        let confirmCallback = null;
+
+        function showConfirm(title, message, callback) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-container').classList.remove('hidden');
+            document.getElementById('modal-container').classList.add('flex');
+            confirmCallback = callback;
+        }
+
+        function closeConfirm(result) {
+            document.getElementById('modal-container').classList.add('hidden');
+            document.getElementById('modal-container').classList.remove('flex');
+            if (result && confirmCallback) {
+                confirmCallback();
+            }
+            confirmCallback = null;
+        }
+    </script>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- Global Modal Container -->
+    <div id="modal-container" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 mx-4">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2"></h3>
+            <p id="modal-message" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeConfirm(false)" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:ring-4 focus:ring-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                    Cancelar
+                </button>
+                <button onclick="closeConfirm(true)" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
