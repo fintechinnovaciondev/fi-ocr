@@ -68,13 +68,31 @@ npm run start:dev
 
 ## ⚙️ Variables de Entorno (.env)
 
-| Variable | Descripción | Ejemplo |
-| :--- | :--- | :--- |
-| `STORAGE_TYPE` | Estrategia de almacenamiento activa | `local`, `gcs`, `oci` |
-| `OLLAMA_URL` | URL del servidor de Ollama para LLM | `http://host.docker.internal:11434/api/generate` |
-| `LOGGING_LEVEL_CONSOLE` | Nivel de logs para consola | `info`, `debug`, `error` |
-| `MONGO_URI` | Cadena de conexión a MongoDB | `mongodb://localhost/ocr` |
-| `REDIS_HOST` | Host de servidor Redis | `localhost` |
+| Categoría | Variable | Descripción | Ejemplo / Valor |
+| :--- | :--- | :--- | :--- |
+| **Base de Datos** | `MONGO_URI` | Cadena de conexión a MongoDB (ReplicaSet soportado) | `mongodb://ocr:ocr@10.20.125.60:30000...` |
+| **Colas (Redis)** | `REDIS_HOST` | Host del servidor Redis | `10.20.125.60` |
+| | `REDIS_PORT` | Puerto de Redis | `30379` |
+| | `REDIS_USER` | Usuario de Redis | `fi_moso` |
+| | `REDIS_PASSWORD` | Contraseña de Redis | `fi_moso_pass` |
+| | `REDIS_NAME` | Nombre de la cola (BullMQ) | `ocr-queue` |
+| | `REDIS_PREFIX` | Prefijo para las llaves en Redis | `moso` |
+| **IA (Ollama)** | `OLLAMA_URL` | URL de la API de Ollama | `http://10.20.125.60:31434/api/generate` |
+| | `OLLAMA_MODEL` | Modelo de lenguaje a utilizar | `ministral-3:14b` |
+| | `OLLAMA_TIMEOUT_MS` | Tiempo de espera máximo para la IA | `300000` |
+| **Auth & App** | `GOOGLE_CLIENT_ID` | ID de cliente OAuth2 de Google | `950827011061-h35...` |
+| | `GOOGLE_CLIENT_SECRET`| Secreto de cliente OAuth2 de Google | `GOCSPX-2T7m...` |
+| | `ADMIN_EMAIL` | Email del administrador para acceso al panel | `aortiz@fintechinversiones.com.py` |
+| | `SESSION_SECRET` | Secreto para firmar las cookies de sesión | `a_very_secure_string...` |
+| | `PORT` | Puerto de escucha de la aplicación | `3000` |
+| **Storage** | `STORAGE_TYPE` | Estrategia activa (`local`, `gcs`, `oci`) | `gcs` |
+| **GCS** | `GCS_PROJECT_ID` | ID del proyecto en Google Cloud | `fintech-ia-labs` |
+| (si aplica) | `GCS_BUCKET` | Nombre del Bucket en GCS | `ocr-bucket-dev` |
+| | `GCS_KEYS_JSON` | JSON completo de la Service Account | `{"type": "service_account", ...}` |
+| **OCI** | `OCI_NAMESPACE` | Namespace de Oracle Cloud | `tu-namespace` |
+| (si aplica) | `OCI_BUCKET` | Nombre del Bucket en OCI | `tu-bucket` |
+| | `OCI_REGION` | Región de OCI | `us-ashburn-1` |
+| **Build** | `NPM_TOKEN` | Token para acceso a paquetes privados de GitHub | `ghp_XmpH...` |
 
 ## 📦 Sistema de Cache de Imágenes
 
