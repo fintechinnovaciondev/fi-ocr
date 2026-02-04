@@ -1,98 +1,89 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Fintech Innovation - Servicio de OCR y Extracción de Datos
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Servicio avanzado de procesamiento de documentos y reconocimiento óptico de caracteres (OCR) construido con NestJS. Permite la ingesta asíncrona de archivos y la extracción de datos estructurados utilizando múltiples motores de IA y OCR tradicional.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Características Principales
 
-## Description
+- **Motores de OCR Multi-Estrategia**:
+  - **PaddleOCR**: Motor de alto rendimiento para documentos multilingües y detección de ángulos.
+  - **Tesseract.js**: OCR tradicional basado en motor LSTM.
+  - **Ollama (LLM Vision)**: Extracción inteligente utilizando modelos de lenguaje (ej. Llama 3 Vision) para interpretar documentos complejos.
+  - **PdfText**: Extracción nativa de texto para PDFs vectoriales.
+- **Almacenamiento Híbrido**: Soporte para almacenamiento Local, Google Cloud Storage (GCS) y Oracle Cloud Infrastructure (OCI).
+- **Procesamiento Asíncrono**: Arquitectura basada en eventos y colas utilizando BullMQ y Redis para manejar cargas pesadas sin bloquear la API.
+- **Panel de Administración**: 
+  - Gestión de procesos en tiempo real (SSE).
+  - Rotación de imágenes y re-procesamiento.
+  - Validación de datos extraídos mediante reglas de negocio negociables.
+  - Registro de auditoría (Logs) por proceso.
+- **Logging Empresarial**: Integración completa con `@fintechinnovaciondev/fi-utils` para trazabilidad y formato estandarizado.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 📁 Estructura del Proyecto
 
-## Project setup
-
-```bash
-$ npm install
+```text
+src/
+├── admin/       # Controladores y servicios para el dashboard de administración
+├── auth/        # Estrategias de seguridad (API Key, Google OAuth2)
+├── common/      # Configuraciones compartidas y middleware (Logs, fi-utils)
+├── ocr/         # Corazón del sistema: estrategias de extracción y orquestación
+│   └── strategies/ # Implementaciones específicas: Tesseract, Paddle, Ollama, etc.
+├── schemas/     # Modelos de datos MongoDB (Mongoose)
+├── storage/     # Abstracción de sistema de archivos (Local, GCS, OCI)
+├── tenant/      # Lógica de gestión de clientes y configuraciones por tenant
+├── views/       # Interfaz de usuario (Handlebars) del panel administrativo
+└── main.ts      # Punto de entrada de la aplicación
 ```
 
-## Compile and run the project
+## 🛠️ Requisitos e Instalación
+
+### Requisitos Previos
+
+- **Docker y Docker Compose** (Recomendado para manejar dependencias de Python/PaddleOCR).
+- **Node.js 22** (Si se corre localmente).
+- **Redis** (Para la gestión de colas).
+- **MongoDB** (Persistencia de datos).
+
+### Instalación con Docker
+
+1. Configura el archivo `.env` (ver sección de variables de entorno).
+2. Construye y levanta los servicios:
 
 ```bash
-# development
-$ npm run start
+# Setea el token para paquetes privados de GitHub
+export NPM_TOKEN=tu_token_aqui
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Construye e inicia
+docker-compose up --build -d
 ```
 
-## Run tests
+### Desarrollo Local
 
 ```bash
-# unit tests
-$ npm run test
+# Instalación de dependencias
+npm install
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Iniciar en modo observación
+npm run start:dev
 ```
 
-## Deployment
+## ⚙️ Variables de Entorno (.env)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+| Variable | Descripción | Ejemplo |
+| :--- | :--- | :--- |
+| `STORAGE_TYPE` | Estrategia de almacenamiento activa | `local`, `gcs`, `oci` |
+| `OLLAMA_URL` | URL del servidor de Ollama para LLM | `http://host.docker.internal:11434/api/generate` |
+| `LOGGING_LEVEL_CONSOLE` | Nivel de logs para consola | `info`, `debug`, `error` |
+| `MONGO_URI` | Cadena de conexión a MongoDB | `mongodb://localhost/ocr` |
+| `REDIS_HOST` | Host de servidor Redis | `localhost` |
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 📦 Sistema de Cache de Imágenes
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+Para optimizar el rendimiento de la interfaz, el sistema implementa una **cache local de imágenes**. Cuando se solicita la imagen de un proceso almacenado en la nube (GCS/OCI):
+1. El sistema verifica si el archivo ya existe en la carpeta `uploads/`.
+2. Si no existe, se descarga desde el proveedor correspondiente.
+3. Las siguientes peticiones se sirven directamente desde el disco local.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 📄 Licencia
 
-## Resources
+Este proyecto es propiedad de **Fintech Innovation** y su uso está limitado a fines internos según los acuerdos de licencia de la organización.
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
